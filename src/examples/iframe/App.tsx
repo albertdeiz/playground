@@ -1,10 +1,18 @@
-import { useRef } from "react";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 import { useApp } from "./useApp";
+import { Imports } from "../../utils/SandboxManager";
 
 function App() {
   const monacoRef = useRef(null);
-  const { code, error, logs, runCode, setCode } = useApp();
+  const [imports, setImports] = useState<Imports>({
+    vue: "https://jspm.dev/vue/dist/vue.esm-browser.prod.js",
+    "vue-router": "https://jspm.dev/vue-router/dist/vue-router.esm-browser.js",
+    react: "https://jspm.dev/react@16",
+    "react-dom": "https://jspm.dev/react-dom@16",
+  });
+
+  const { code, error, logs, runCode, setCode } = useApp(imports);
 
   const handleClickRun = (): void => {
     runCode();
@@ -16,35 +24,43 @@ function App() {
     }
   }
 
-  function handleEditorDidMount() {
-    monacoRef.current.languages.typescript.typescriptDefaults.addExtraLib(
-      `
-      declare module '@vue/compiler-dom' {
-        export function CompilerOptions(): void;
-      }
-
-      declare module '@vue/runtime-dom' {
-        export function RenderFunction(): void;
-        export function createApp({ template }: { template: string }): void;
-      }
-
-      declare module 'vue' {
-        import { CompilerOptions } from '@vue/compiler-dom';
-        import { RenderFunction } from '@vue/runtime-dom';
-
-        export declare function compile(template: string | HTMLElement, options?: CompilerOptions): RenderFunction;
-
-
-        export * from "@vue/runtime-dom";
-
-        export { }
-      }`
-    );
-  }
-
   function handleEditorWillMount(monaco) {
     monacoRef.current = monaco;
+
+    setMonacoLibs();
   }
+
+  function handleChangeImportValue(key: string) {
+    return function (e: ChangeEvent<HTMLInputElement>): void {
+      const { value } = e.target;
+
+      setImports((prev) => ({ ...prev, [key]: value }));
+    };
+  }
+
+  const setMonacoLibs = useCallback(
+    function () {
+      if (!monacoRef.current) {
+        return;
+      }
+
+      const libsType = Object.keys(imports)
+        .map(
+          (importItem) =>
+            `declare module '${importItem}' {export default { } as any;}`
+        )
+        .join("\n");
+
+      monacoRef.current.languages.typescript.typescriptDefaults.addExtraLib(
+        libsType
+      );
+    },
+    [imports]
+  );
+
+  useEffect(() => {
+    setMonacoLibs();
+  }, [imports]);
 
   return (
     <div
@@ -61,6 +77,26 @@ function App() {
         <button type="button" onClick={handleClickRun}>
           Run
         </button>
+        <div>
+          {Object.entries(imports).map(([key, value]) => (
+            <div
+              key={key}
+              style={{ display: "flex", gap: "16px", marginBottom: "16px" }}
+            >
+              <input
+                style={{ display: "flex", flex: 1 / 2 }}
+                type="text"
+                value={key}
+              />
+              <input
+                style={{ display: "flex", flex: 1 / 2 }}
+                type="text"
+                value={value}
+                onChange={handleChangeImportValue(key)}
+              />
+            </div>
+          ))}
+        </div>
       </div>
       <div
         style={{
@@ -78,7 +114,6 @@ function App() {
             onChange={(value = "") => setCode(value)}
             beforeMount={handleEditorWillMount}
             onValidate={handleEditorValidation}
-            onMount={handleEditorDidMount}
           />
         </div>
         <div style={{ flex: 1 / 2, display: "flex", flexDirection: "column" }}>
