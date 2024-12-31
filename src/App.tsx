@@ -1,49 +1,271 @@
 import { useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
-import Sval from "sval";
 
-type Arg = any;
+import Sval from "sval";
+import * as recast from "recast";
+import { parser } from "recast/parsers/babel";
+
+class CustomConsole {
+  constructor(private logHandler: (type: 'log' | 'error', line: number, message: string) => void) {}
+
+  log(...args: any[]) {
+    const lineNumber = args[0];
+    this.logHandler(
+      'log',
+      lineNumber,
+      args
+        .splice(1)
+        .map((arg) => JSON.stringify(arg, null, 2))
+        .join(" ")
+    );
+  }
+
+  error(...args: any[]) {
+    const lineNumber = args[0];
+    this.logHandler(
+      'error',
+      lineNumber,
+      args
+        .splice(1)
+        .map((arg) => JSON.stringify(arg, null, 2))
+        .join(" ")
+    );
+  }
+}
 
 function App() {
   const editorRef = useRef(null);
-  const [code, setCode] = useState(`import * as vue from 'vue';
-console.log(vue);`);
+  const [code, setCode] = useState(`import { BaseTransition } from 'vue';
+import moment from 'moment';
+moment();
+console.log(BaseTransition);`);
   const [logs, setLogs] = useState<string[]>([]);
   const [error, setError] = useState("");
 
   const handleClickRun = async (): void => {
     setLogs([]);
     setError("");
+    handleRun();
+  };
 
-    const customConsole = {
-      log: (...args: any[]) =>
-        setLogs((prev) => [
-          ...prev,
-          ...(args ?? []).map((arg: Arg) =>
-            typeof arg === "object" ? JSON.stringify(arg, null, 1) : String(arg)
-          ),
-        ]),
-    };
+  const handleRun = async () => {
+    function preprocessCode(code: string) {
+      const recastAST = recast.parse(code, {
+        parser,
+      });
 
-    const interpreter = new Sval({ sandBox: true, sourceType: 'script'});
+      recast.types.visit(recastAST, {
+        visitImportDeclaration(path) {
+          const { node } = path;
+          const moduleUrl = node.source.value ?? "";
+          const { specifiers: nodeSpecifiers = [] } = node;
 
-    interpreter.import({
-      vue: await import('https://cdnjs.cloudflare.com/ajax/libs/vue/3.5.13/vue.esm-browser.prod.min.js'),
-      moment: await import('https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js'),
-    });
-    
-    const originalConsoleLog = console.log;
+          // Caso 1: Importación por defecto (import package from 'package-name';)
+          if (
+            nodeSpecifiers.length === 1 &&
+            nodeSpecifiers[0].type === "ImportDefaultSpecifier"
+          ) {
+            const localName = nodeSpecifiers[0].local?.name ?? "";
 
-    try {
-      console.log = customConsole.log;
+            // Crear una variable temporal para el módulo importado
+            const moduleVariableName = `__imported_${localName}`;
 
-      interpreter.run(code);
+            // Crear el dynamic import
+            const dynamicImport = recast.types.builders.variableDeclaration(
+              "const",
+              [
+                recast.types.builders.variableDeclarator(
+                  recast.types.builders.identifier(moduleVariableName),
+                  recast.types.builders.awaitExpression(
+                    recast.types.builders.callExpression(
+                      recast.types.builders.identifier("import"),
+                      [recast.types.builders.literal(moduleUrl)]
+                    )
+                  )
+                ),
+              ]
+            );
 
-    } catch (error) {
-      setError(`Error: ${error.toString()}`);
-    } finally {
-      console.log = originalConsoleLog;
+            // Crear la asignación del valor por defecto a la variable original
+            const defaultAssignment = recast.types.builders.variableDeclaration(
+              "const",
+              [
+                recast.types.builders.variableDeclarator(
+                  recast.types.builders.identifier(localName),
+                  recast.types.builders.memberExpression(
+                    recast.types.builders.identifier(moduleVariableName),
+                    recast.types.builders.identifier("default")
+                  )
+                ),
+              ]
+            );
+
+            // Reemplazar el import con las declaraciones correctas
+            path.replace(dynamicImport, defaultAssignment);
+          }
+
+          // Caso 2: Importación con namespace (import * as package from 'package-name';)
+          else if (
+            nodeSpecifiers.length === 1 &&
+            nodeSpecifiers[0].type === "ImportNamespaceSpecifier"
+          ) {
+            const localName = nodeSpecifiers[0].local?.name;
+
+            const dynamicImport = recast.types.builders.variableDeclaration(
+              "const",
+              [
+                recast.types.builders.variableDeclarator(
+                  recast.types.builders.identifier(localName),
+                  recast.types.builders.awaitExpression(
+                    recast.types.builders.callExpression(
+                      recast.types.builders.identifier("import"),
+                      [recast.types.builders.literal(moduleUrl)]
+                    )
+                  )
+                ),
+              ]
+            );
+
+            path.replace(dynamicImport);
+          }
+          // Caso 3: Importaciones específicas (import { someExport } from 'package-name';)
+          else if (
+            nodeSpecifiers.length > 0 &&
+            nodeSpecifiers.every(
+              (specifier) => specifier.type === "ImportSpecifier"
+            )
+          ) {
+            const dynamicImportName = `__imported_${String(moduleUrl).replace(
+              /[^a-zA-Z0-9]/g,
+              "_"
+            )}`;
+            const dynamicImport = recast.types.builders.variableDeclaration(
+              "const",
+              [
+                recast.types.builders.variableDeclarator(
+                  recast.types.builders.identifier(dynamicImportName),
+                  recast.types.builders.awaitExpression(
+                    recast.types.builders.callExpression(
+                      recast.types.builders.identifier("import"),
+                      [recast.types.builders.literal(moduleUrl)]
+                    )
+                  )
+                ),
+              ]
+            );
+
+            const specificImports = nodeSpecifiers.map((specifier) => {
+              const importedName = specifier.imported.name;
+              const localName = specifier.local?.name;
+
+              return recast.types.builders.variableDeclaration("const", [
+                recast.types.builders.variableDeclarator(
+                  recast.types.builders.identifier(localName),
+                  recast.types.builders.memberExpression(
+                    recast.types.builders.identifier(dynamicImportName),
+                    recast.types.builders.identifier(importedName)
+                  )
+                ),
+              ]);
+            });
+
+            // Reemplazar con dynamic import + las asignaciones individuales
+            path.replace(dynamicImport, ...specificImports);
+          }
+
+          return false;
+        },
+
+        visitExpressionStatement(path) {
+          const { node } = path;
+
+          // Obtener el número de línea
+          const lineNumber = node.loc?.start.line ?? "unknown";
+
+          // Crear el argumento adicional con la línea de código
+          const lineInfo = recast.types.builders.literal(`${lineNumber}`);
+
+          // Verificar si la expresión es un CallExpression
+          if (
+            node.expression.type === "CallExpression" &&
+            node.expression.callee.type === "MemberExpression" &&
+            node.expression.callee.object.type === "Identifier" &&
+            node.expression.callee.object.name === "console" &&
+            node.expression.callee.property.type === "Identifier" &&
+            ["log", "error", "warn"].includes(
+              node.expression.callee.property.name
+            )
+          ) {
+            if (Array.isArray(node.expression.arguments)) {
+              node.expression.arguments.unshift(lineInfo);
+            }
+
+            return false; // No hacemos nada si ya es un console.log
+          }
+
+          if (node.expression.type === 'AssignmentExpression') {
+            return false;
+          }
+
+          // Crear un nuevo CallExpression que incluye el número de línea
+          node.expression = recast.types.builders.callExpression(
+            recast.types.builders.memberExpression(
+              recast.types.builders.identifier("console"),
+              recast.types.builders.identifier("log")
+            ),
+            [lineInfo, node.expression]
+          );
+
+          this.traverse(path);
+        },
+      });
+
+      return recast.print(recastAST).code;
     }
+
+    function executeCode() {
+      try {
+        const interpreter = new Sval({
+          ecmaVer: "latest",
+          sandBox: true,
+          sourceType: "module",
+        });
+
+        interpreter.import({
+          console: {
+            default: new CustomConsole((type, line, message) => {
+              if (type === 'error') {
+                setError(message);
+              } else {
+                setLogs(prev => [...prev, `[${line}]: ${message}`]);
+              }
+            }),
+          },
+          moment: import("https://jspm.dev/moment"),
+          vue: import("https://jspm.dev/vue"),
+        });
+
+        const preprocessedCode = preprocessCode(code);
+
+        const wrappedCode = `
+          import console from 'console';
+
+          (async () => {
+            try {
+              ${preprocessedCode}
+            } catch (e) {
+              console.error('u', e.toString());
+            }
+          })();
+        `;
+
+        interpreter.run(wrappedCode);
+      } catch (err) {
+        setError(err.toString());
+      }
+    }
+
+    executeCode();
   };
 
   function handleEditorValidation(markers: any[]) {
@@ -63,7 +285,7 @@ console.log(vue);`);
         flexWrap: "nowrap",
       }}
     >
-      <div style={{}}>
+      <div>
         <button type="button" onClick={handleClickRun}>
           Run
         </button>
