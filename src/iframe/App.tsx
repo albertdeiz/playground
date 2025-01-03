@@ -1,18 +1,10 @@
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import Editor from "@monaco-editor/react";
 import { useApp } from "./useApp";
-import { Imports } from "../utils/SandboxManager";
 
 function App() {
   const monacoRef = useRef(null);
-  const [imports, setImports] = useState<Imports>({
-    vue: "https://jspm.dev/vue/dist/vue.esm-browser.prod.js",
-    "vue-router": "https://jspm.dev/vue-router/dist/vue-router.esm-browser.js",
-    react: "https://jspm.dev/react@16",
-    "react-dom": "https://jspm.dev/react-dom@16",
-  });
-
-  const { code, error, logs, runCode, setCode } = useApp(imports);
+  const { code, error, logs, runCode, setCode } = useApp();
 
   const handleClickRun = (): void => {
     runCode();
@@ -37,40 +29,33 @@ function App() {
       allowNonTsExtensions: true,
     });
 
+    monaco.editor.defineTheme("default", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [],
+      colors: {},
+    });
+    monaco.editor.setTheme('default')
+
     setMonacoLibs();
   }
 
-  function handleChangeImportValue(key: string) {
-    return function (e: ChangeEvent<HTMLInputElement>): void {
-      const { value } = e.target;
+  function setMonacoLibs() {
+    if (!monacoRef.current) {
+      return;
+    }
 
-      setImports((prev) => ({ ...prev, [key]: value }));
-    };
+    const libsType = Object.keys({})
+      .map(
+        (importItem) =>
+          `declare module '${importItem}' {export default { } as any;}`
+      )
+      .join("\n");
+
+    monacoRef.current.languages.typescript.typescriptDefaults.addExtraLib(
+      libsType
+    );
   }
-
-  const setMonacoLibs = useCallback(
-    function () {
-      if (!monacoRef.current) {
-        return;
-      }
-
-      const libsType = Object.keys(imports)
-        .map(
-          (importItem) =>
-            `declare module '${importItem}' {export default { } as any;}`
-        )
-        .join("\n");
-
-      monacoRef.current.languages.typescript.typescriptDefaults.addExtraLib(
-        libsType
-      );
-    },
-    [imports]
-  );
-
-  useEffect(() => {
-    setMonacoLibs();
-  }, [imports]);
 
   return (
     <div
@@ -87,26 +72,6 @@ function App() {
         <button type="button" onClick={handleClickRun}>
           Run
         </button>
-        <div>
-          {Object.entries(imports).map(([key, value]) => (
-            <div
-              key={key}
-              style={{ display: "flex", gap: "16px", marginBottom: "16px" }}
-            >
-              <input
-                style={{ display: "flex", flex: 1 / 2 }}
-                type="text"
-                value={key}
-              />
-              <input
-                style={{ display: "flex", flex: 1 / 2 }}
-                type="text"
-                value={value}
-                onChange={handleChangeImportValue(key)}
-              />
-            </div>
-          ))}
-        </div>
       </div>
       <div
         style={{
@@ -124,7 +89,7 @@ function App() {
             onChange={(value = "") => setCode(value)}
             beforeMount={handleEditorWillMount}
             onValidate={handleEditorValidation}
-            options={{fontSize: 14}}
+            options={{ fontSize: 14, minimap: { enabled: false } }}
           />
         </div>
         <div style={{ flex: 1 / 2, display: "flex", flexDirection: "column" }}>

@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { Imports, SandboxManager } from "../utils/SandboxManager";
+import { SandboxManager } from "../utils/SandboxManager";
 import useLocalStorage from "../hooks/use-local-storage";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -11,7 +11,7 @@ interface EventData {
   message: string;
 }
 
-export const useApp = (imports: Imports) => {
+export const useApp = () => {
   const [logs, setLogs] = useState<string[]>([]);
   // const [code, setCode] =
   //   useState(`import { createRouter, createWebHistory } from 'vue-router'

@@ -13,20 +13,17 @@ declare global {
   }
 }
 
-export type Imports = Record<string, string>;
-
 export class SandboxManager {
   public iframe: HTMLIFrameElement | null = null;
   private scope: Scope | undefined;
   private script: HTMLScriptElement | undefined;
 
-  constructor(cb: (iframe: HTMLIFrameElement) => Scope, imports: Imports) {
-    this.createIframe(cb, imports);
+  constructor(cb: (iframe: HTMLIFrameElement) => Scope) {
+    this.createIframe(cb);
   }
 
   private createIframe(
     cb: (iframe: HTMLIFrameElement) => Scope,
-    imports: Imports
   ): void {
     this.iframe = document.createElement("iframe");
     this.iframe.src = "about:blank";
@@ -36,7 +33,7 @@ export class SandboxManager {
     this.scope = cb(this.iframe);
 
     if (this.iframe.contentWindow) {
-      this.initializeSandbox(imports);
+      this.initializeSandbox();
     }
   }
 
@@ -54,15 +51,13 @@ export class SandboxManager {
       imports.push(`import ${bindings} from '${moduleUrl}';`);
     }
 
-    return { code: code.replace(importRegex, "").trim(), imports };
+    return { code: preprocessCode(code.replace(importRegex, "").trim()), imports };
   }
 
-  private initializeSandbox(imports: Imports): void {
+  private initializeSandbox(): void {
     if (!this.iframe?.contentWindow) {
       throw new Error("Iframe no inicializado correctamente.");
     }
-
-    this.iframe.contentWindow.process = { env: { NODE_ENV: "development" } };
 
     const { document: sandboxDoc } = this.iframe.contentWindow;
 
@@ -71,9 +66,6 @@ export class SandboxManager {
     sandboxDoc.write("<head></head>");
     sandboxDoc.write("<body>");
     sandboxDoc.write("<div id='app'></div>");
-    sandboxDoc.write(
-      `<script type="importmap">${JSON.stringify({ imports })}</script>`
-    );
     sandboxDoc.write("</body>");
     sandboxDoc.write("</html>");
     sandboxDoc.close();
@@ -98,23 +90,17 @@ export class SandboxManager {
 
     const { code, imports } = SandboxManager.transformCode(script);
 
-    const f = preprocessCode(script);
-
     this.script.textContent = `
+      ${imports.join("\n")}
       try {
-        ${f}
+        ${code}
       } catch(e) {
         console.error(e);
       }`;
 
     console.log(this.script.textContent)
 
-    try {
-      this.iframe.contentWindow.document.body.appendChild(this.script);
-    } catch (e) {
-      console.log("aslcnal");
-      console.log({ e });
-    }
+    this.iframe.contentWindow.document.body.appendChild(this.script);
   }
 
   public destroy(): void {
