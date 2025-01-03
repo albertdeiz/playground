@@ -1,7 +1,7 @@
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 import { useApp } from "./useApp";
-import { Imports } from "../../utils/SandboxManager";
+import { Imports } from "../utils/SandboxManager";
 
 function App() {
   const monacoRef = useRef(null);
@@ -26,6 +26,16 @@ function App() {
 
   function handleEditorWillMount(monaco) {
     monacoRef.current = monaco;
+
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      module: monaco.languages.typescript.ModuleKind.ESNext, // Usar ESNext para habilitar top-level await
+      target: monaco.languages.typescript.ScriptTarget.ES2022, // Compatibilidad con top-level await
+      allowJs: true, // Permitir JavaScript (opcional)
+      noLib: true, // No incluir librerías por defecto (opcional)
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs, // Resolución de módulos estilo Node.js
+      esModuleInterop: true, // Compatibilidad con ES Modules
+      allowNonTsExtensions: true,
+    });
 
     setMonacoLibs();
   }
@@ -114,6 +124,7 @@ function App() {
             onChange={(value = "") => setCode(value)}
             beforeMount={handleEditorWillMount}
             onValidate={handleEditorValidation}
+            options={{fontSize: 14}}
           />
         </div>
         <div style={{ flex: 1 / 2, display: "flex", flexDirection: "column" }}>

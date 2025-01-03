@@ -1,3 +1,5 @@
+import { preprocessCode } from "./transpiler";
+
 interface Scope {
   console?: {
     log: () => void;
@@ -96,16 +98,16 @@ export class SandboxManager {
 
     const { code, imports } = SandboxManager.transformCode(script);
 
-    const s = JSON.stringify(code).trim();
+    const f = preprocessCode(script);
+
     this.script.textContent = `
-      ${imports.join("")}
       try {
-        eval(${s});
+        ${f}
       } catch(e) {
         console.error(e);
-      }`
-      .replaceAll("\n", "")
-      .trim();
+      }`;
+
+    console.log(this.script.textContent)
 
     try {
       this.iframe.contentWindow.document.body.appendChild(this.script);

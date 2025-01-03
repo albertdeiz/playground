@@ -4,26 +4,43 @@ import Editor from "@monaco-editor/react";
 import Sval from "sval";
 import * as recast from "recast";
 import { parser } from "recast/parsers/babel";
+import useLocalStorage from "./hooks/use-local-storage";
 
 class CustomConsole {
-  constructor(private logHandler: (type: 'log' | 'error', line: number, message: string) => void) {}
+  constructor(
+    private logHandler: (
+      type: "log" | "error",
+      line: number | null,
+      message: string
+    ) => void
+  ) {}
 
   log(...args: any[]) {
-    const lineNumber = args[0];
-    this.logHandler(
-      'log',
-      lineNumber,
-      args
-        .splice(1)
-        .map((arg) => JSON.stringify(arg, null, 2))
-        .join(" ")
-    );
+    if (typeof args[0] === "object") {
+      const { line, args: _args } = args[0];
+
+      this.logHandler(
+        "log",
+        line,
+        (Array.isArray(_args) ? _args
+          .map((arg) => JSON.stringify(arg, null, 2))
+          .join(" ") : _args)
+      );
+    } else {
+      this.logHandler(
+        "log",
+        null,
+        args
+          .map((arg) => JSON.stringify(arg, null, 2))
+          .join(" ")
+      );
+    }
   }
 
   error(...args: any[]) {
     const lineNumber = args[0];
     this.logHandler(
-      'error',
+      "error",
       lineNumber,
       args
         .splice(1)
@@ -35,10 +52,13 @@ class CustomConsole {
 
 function App() {
   const editorRef = useRef(null);
-  const [code, setCode] = useState(`import { BaseTransition } from 'vue';
+  const [code, setCode] = useLocalStorage(
+    "CODE",
+    `import { BaseTransition } from 'vue';
 import moment from 'moment';
 moment();
-console.log(BaseTransition);`);
+console.log(BaseTransition);`
+  );
   const [logs, setLogs] = useState<string[]>([]);
   const [error, setError] = useState("");
 
@@ -185,6 +205,10 @@ console.log(BaseTransition);`);
           // Crear el argumento adicional con la línea de código
           const lineInfo = recast.types.builders.literal(`${lineNumber}`);
 
+          if (node.expression.type === "ArrowFunctionExpression") {
+            return false;
+          }
+
           // Verificar si la expresión es un CallExpression
           if (
             node.expression.type === "CallExpression" &&
@@ -196,16 +220,52 @@ console.log(BaseTransition);`);
               node.expression.callee.property.name
             )
           ) {
-            if (Array.isArray(node.expression.arguments)) {
-              node.expression.arguments.unshift(lineInfo);
-            }
+            const argumentsArray = node.expression.arguments.map((arg) => {
+              if (arg.type === "Literal") {
+                // Para valores primitivos (string, number, boolean, etc.)
+                return recast.types.builders.literal(arg.value);
+              } else if (arg.type === "Identifier") {
+                // Para identificadores
+                return recast.types.builders.identifier(arg.name);
+              }
+              // Agrega otros casos si es necesario (e.g., objetos, arrays, funciones)
+              return arg;
+            });
+
+            const myObjectNode = recast.types.builders.objectExpression([
+              recast.types.builders.property(
+                "init",
+                recast.types.builders.identifier("line"),
+                lineInfo
+              ),
+              recast.types.builders.property(
+                "init",
+                recast.types.builders.identifier("args"),
+                recast.types.builders.arrayExpression(argumentsArray)
+              ),
+            ]);
+
+            node.expression.arguments = [myObjectNode];
 
             return false; // No hacemos nada si ya es un console.log
           }
 
-          if (node.expression.type === 'AssignmentExpression') {
+          if (node.expression.type === "AssignmentExpression") {
             return false;
           }
+
+          const myObjectNode = recast.types.builders.objectExpression([
+            recast.types.builders.property(
+              "init",
+              recast.types.builders.identifier("line"),
+              lineInfo
+            ),
+            recast.types.builders.property(
+              "init",
+              recast.types.builders.identifier("args"),
+              node.expression,
+            ),
+          ]);
 
           // Crear un nuevo CallExpression que incluye el número de línea
           node.expression = recast.types.builders.callExpression(
@@ -213,7 +273,7 @@ console.log(BaseTransition);`);
               recast.types.builders.identifier("console"),
               recast.types.builders.identifier("log")
             ),
-            [lineInfo, node.expression]
+            [myObjectNode]
           );
 
           this.traverse(path);
@@ -234,10 +294,14 @@ console.log(BaseTransition);`);
         interpreter.import({
           console: {
             default: new CustomConsole((type, line, message) => {
-              if (type === 'error') {
+              if (type === "error") {
                 setError(message);
               } else {
-                setLogs(prev => [...prev, `[${line}]: ${message}`]);
+                if (line) {
+                  setLogs((prev) => [...prev, `[${line}]: ${message}`]);
+                } else {
+                  setLogs((prev) => [...prev, `${message}`]);
+                }
               }
             }),
           },
@@ -258,6 +322,8 @@ console.log(BaseTransition);`);
             }
           })();
         `;
+
+        console.log(preprocessedCode);
 
         interpreter.run(wrappedCode);
       } catch (err) {

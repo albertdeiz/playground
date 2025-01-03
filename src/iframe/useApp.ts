@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
-import { Imports, SandboxManager } from "../../utils/SandboxManager";
+import { Imports, SandboxManager } from "../utils/SandboxManager";
+import useLocalStorage from "../hooks/use-local-storage";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Arg = any;
@@ -24,8 +25,15 @@ export const useApp = (imports: Imports) => {
   // app.use(router)
 
   // app.mount('#app');`);
-  const [code, setCode] =
-    useState(`import React from 'react';
+  //   const [code, setCode] =
+  //     useState(`import React from 'react';
+  // import ReactDOM from 'react-dom';
+
+  // ReactDOM.render(
+  //   React.createElement('h1', null, '¡Hola desde JSPM!'),
+  //   document.getElementById('app')
+  // );`);
+  const [code, setCode] = useLocalStorage('CODE', `import React from 'react';
 import ReactDOM from 'react-dom';
 
 ReactDOM.render(
