@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
-import { SandboxManager } from "../utils/SandboxManager";
-import useLocalStorage from "../hooks/use-local-storage";
+import { SandboxManager } from "../classes/SandboxManager";
+import useLocalStorage from "./use-local-storage";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Arg = any;
@@ -13,33 +13,7 @@ interface EventData {
 
 export const useApp = () => {
   const [logs, setLogs] = useState<string[]>([]);
-  // const [code, setCode] =
-  //   useState(`import { createRouter, createWebHistory } from 'vue-router'
-  // import { createApp } from 'vue'
-
-  // const app = createApp({ template: 'Hello world.' })
-  // const router = createRouter({
-  //   routes: [{ path: '/:pathMatch(.*)*', component: app }],
-  //   history: createWebHistory()
-  // })
-  // app.use(router)
-
-  // app.mount('#app');`);
-  //   const [code, setCode] =
-  //     useState(`import React from 'react';
-  // import ReactDOM from 'react-dom';
-
-  // ReactDOM.render(
-  //   React.createElement('h1', null, '¡Hola desde JSPM!'),
-  //   document.getElementById('app')
-  // );`);
-  const [code, setCode] = useLocalStorage('CODE', `import React from 'react';
-import ReactDOM from 'react-dom';
-
-ReactDOM.render(
-  React.createElement('h1', null, '¡Hola desde JSPM!'),
-  document.getElementById('app')
-);`);
+  const [code, setCode] = useLocalStorage('__CODE', '');
   const [error, setError] = useState("");
   const sandbox = useRef<SandboxManager>();
 
@@ -99,14 +73,13 @@ ReactDOM.render(
             );
           },
         },
-      }),
-      imports
+      })
     );
 
     return () => {
       sandbox.current?.destroy();
     };
-  }, [imports]);
+  }, []);
 
   return {
     code,

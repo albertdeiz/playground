@@ -1,4 +1,4 @@
-import { preprocessCode } from "./transpiler";
+import { preprocessCode } from "../utils/transpiler.util";
 
 interface Scope {
   console?: {
