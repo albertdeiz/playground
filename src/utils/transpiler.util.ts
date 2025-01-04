@@ -12,37 +12,76 @@ export function preprocessCode(code: string): string {
       const lineNumber = node.loc?.start.line ?? "unknown";
       const lineInfo = recast.types.builders.literal(`${lineNumber}`);
 
+      if (node.type === "CallExpression") {
+        const oldNode = { ...node };
+
+        node.callee = recast.types.builders.memberExpression(
+          recast.types.builders.identifier("console"),
+          recast.types.builders.identifier("log")
+        );
+
+        node.arguments = [
+          recast.types.builders.objectExpression([
+            recast.types.builders.property(
+              "init",
+              recast.types.builders.identifier("line"),
+              lineInfo
+            ),
+            recast.types.builders.property(
+              "init",
+              recast.types.builders.identifier("type"),
+              recast.types.builders.literal("log")
+            ),
+            recast.types.builders.property(
+              "init",
+              recast.types.builders.identifier("args"),
+              recast.types.builders.arrayExpression([
+                recast.types.builders.callExpression(
+                  oldNode.callee,
+                  oldNode.arguments
+                ),
+              ])
+            ),
+          ]),
+        ];
+
+        return false;
+      }
+
       if (
         node.callee.type === "MemberExpression" &&
         node.callee.object.type === "CallExpression" &&
         node.callee.object.callee.type === "Identifier"
       ) {
-        console.log(node.callee.object)
-        const myObjectNode = recast.types.builders.objectExpression([
-          recast.types.builders.property(
-            "init",
-            recast.types.builders.identifier("line"),
-            lineInfo
-          ),
-          recast.types.builders.property(
-            "init",
-            recast.types.builders.identifier("type"),
-            recast.types.builders.literal("log")
-          ),
-          recast.types.builders.property(
-            "init",
-            recast.types.builders.identifier("args"),
-            node
-          ),
-        ]);
-
-        node.callee = recast.types.builders.callExpression(
-          recast.types.builders.memberExpression(
-            recast.types.builders.identifier("console"),
-            recast.types.builders.identifier("log")
-          ),
-          [myObjectNode]
+        const oldNode = recast.types.builders.callExpression(
+          node.callee,
+          node.arguments
         );
+
+        node.callee = recast.types.builders.memberExpression(
+          recast.types.builders.identifier("console"),
+          recast.types.builders.identifier("log")
+        );
+
+        node.arguments = [
+          recast.types.builders.objectExpression([
+            recast.types.builders.property(
+              "init",
+              recast.types.builders.identifier("line"),
+              lineInfo
+            ),
+            recast.types.builders.property(
+              "init",
+              recast.types.builders.identifier("type"),
+              recast.types.builders.literal("log")
+            ),
+            recast.types.builders.property(
+              "init",
+              recast.types.builders.identifier("args"),
+              recast.types.builders.arrayExpression([oldNode])
+            ),
+          ]),
+        ];
 
         return false;
       }
@@ -54,7 +93,6 @@ export function preprocessCode(code: string): string {
         node.callee.property.type === "Identifier" &&
         ["log", "error", "warn"].includes(node.callee.property.name)
       ) {
-        
         const myObjectNode = recast.types.builders.objectExpression([
           recast.types.builders.property(
             "init",
