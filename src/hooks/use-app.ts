@@ -10,6 +10,7 @@ export interface EventData {
   args: Arg[];
   message: string;
   line: number;
+  stack: string;
 }
 
 export const useApp = () => {
@@ -71,7 +72,14 @@ export const useApp = () => {
           }
 
           iframe.contentWindow?.parent.postMessage(
-            { type: "error", ...dataLog },
+            {
+              type: "error",
+              ...dataLog,
+              ...{
+                stack: dataLog.stack,
+                message: dataLog.message,
+              },
+            },
             "*"
           );
         },

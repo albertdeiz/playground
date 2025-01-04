@@ -101,7 +101,10 @@ export class SandboxManager {
 
       this.iframe.contentWindow.document.body.appendChild(this.script);
     } catch (e) {
-      console.error(e);
+      this.iframe.contentWindow?.parent.postMessage(
+        { type: "error", stack: e.stack, message: e.message },
+        "*"
+      );
     }
   }
 

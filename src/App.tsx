@@ -46,7 +46,7 @@ function App() {
   }
 
   return (
-    <div className="flex p-5 h-screen">
+    <div className="container mx-auto flex p-5 h-screen">
       <div
         className="flex flex-col flex-1 bg-slate-100 rounded-xl overflow-hidden"
         style={{ backgroundColor: "#282a36" }}
@@ -69,10 +69,20 @@ function App() {
               onScrollChange={setScrollTop}
             />
           </div>
-          <div className="flex flex-col w-1/3 he-full" style={{ transform: `translateY(-${scrollTop}px)` }}>
+          <div className="relative flex flex-col w-1/3 he-full">
+            {error && (
+              <div className="flex sticky top-0 left-0 w-full h-full py-2 pl-0 pr-2 z-10">
+                <div className="flex-1 bg-red-600 rounded-md p-2">
+                  <p className="text-white text-md">{error}</p>
+                </div>
+              </div>
+            )}
             <div
-              className="text-white flex-1"
-              style={{ borderTop: "1px solid rgba(255,255,255, 0.1)" }}
+              className="absolute top-0 w-full left-0 text-white flex-1"
+              style={{
+                borderTop: "1px solid rgba(255,255,255, 0.1)",
+                transform: `translateY(-${scrollTop}px)`,
+              }}
             >
               {parseLogs(logs).map((log, i) => (
                 <p
@@ -87,7 +97,6 @@ function App() {
                 </p>
               ))}
             </div>
-            {error && <div>{error}</div>}
           </div>
         </div>
       </div>
