@@ -22,13 +22,11 @@ export class SandboxManager {
     this.createIframe(cb);
   }
 
-  private createIframe(
-    cb: (iframe: HTMLIFrameElement) => Scope,
-  ): void {
+  private createIframe(cb: (iframe: HTMLIFrameElement) => Scope): void {
     this.iframe = document.createElement("iframe");
     this.iframe.src = "about:blank";
     this.iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
-    // this.iframe.style.display = "none";
+    this.iframe.style.display = "none";
     document.body.appendChild(this.iframe);
     this.scope = cb(this.iframe);
 
@@ -51,7 +49,9 @@ export class SandboxManager {
       imports.push(`import ${bindings} from '${moduleUrl}';`);
     }
 
-    return { code: preprocessCode(code.replace(importRegex, "").trim()), imports };
+    const transpiledCode = preprocessCode(code);
+
+    return { code: transpiledCode.replace(importRegex, "").trim(), imports };
   }
 
   private initializeSandbox(): void {
@@ -88,19 +88,21 @@ export class SandboxManager {
     this.script = this.iframe.contentWindow.document.createElement("script");
     this.script.type = "module";
 
-    const { code, imports } = SandboxManager.transformCode(script);
+    try {
+      const { code, imports } = SandboxManager.transformCode(script);
 
-    this.script.textContent = `
-      ${imports.join("\n")}
-      try {
-        ${code}
-      } catch(e) {
-        console.error(e);
-      }`;
+      this.script.textContent = `
+        ${imports.join("\n")}
+        try {
+          ${code}
+        } catch(e) {
+          console.error(e);
+        }`;
 
-    console.log(this.script.textContent)
-
-    this.iframe.contentWindow.document.body.appendChild(this.script);
+      this.iframe.contentWindow.document.body.appendChild(this.script);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   public destroy(): void {

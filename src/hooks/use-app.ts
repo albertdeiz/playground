@@ -5,15 +5,16 @@ import useLocalStorage from "./use-local-storage";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Arg = any;
 
-interface EventData {
+export interface EventData {
   type: "log" | "error";
   args: Arg[];
   message: string;
+  line: number;
 }
 
 export const useApp = () => {
-  const [logs, setLogs] = useState<string[]>([]);
-  const [code, setCode] = useLocalStorage('__CODE', '');
+  const [logs, setLogs] = useState<EventData[]>([]);
+  const [code, setCode] = useLocalStorage("__CODE", "");
   const [error, setError] = useState("");
   const sandbox = useRef<SandboxManager>();
 
@@ -22,19 +23,17 @@ export const useApp = () => {
       if (event.origin !== window.location.origin) {
         return;
       }
-
       const { data } = event;
+      data.line = Number(data.line);
 
-      if (data?.type === "log") {
-        const logs = (data?.args ?? []).map((arg: Arg) =>
-          typeof arg === "object" ? JSON.stringify(arg, null, 1) : String(arg)
-        );
+      const { type, message } = data;
 
-        setLogs((prev) => [...prev, ...logs]);
+      if (type === "log") {
+        setLogs((prev) => [...prev, data]);
       }
 
-      if (data?.type === "error") {
-        setError(data.message);
+      if (type === "error") {
+        setError(message);
       }
     };
 
@@ -49,32 +48,35 @@ export const useApp = () => {
     setLogs([]);
     setError("");
 
-    try {
-      sandbox.current?.executeScript(code);
-    } catch (e) {
-      console.log(e);
-    }
+    sandbox.current?.executeScript(code);
   };
 
   useEffect(() => {
-    sandbox.current = new SandboxManager(
-      (iframe) => ({
-        console: {
-          log: function (...args: Arg[]) {
-            iframe.contentWindow?.parent.postMessage(
-              { type: "log", args: args },
-              "*"
-            );
-          },
-          error: function (...args: Arg[]) {
-            iframe.contentWindow?.parent.postMessage(
-              { type: "error", message: args.join(" ") },
-              "*"
-            );
-          },
+    sandbox.current = new SandboxManager((iframe) => ({
+      console: {
+        log: function (...args: Arg[]) {
+          const [dataLog] = args;
+
+          if (typeof dataLog !== "object") {
+            return;
+          }
+
+          iframe.contentWindow?.parent.postMessage({ ...dataLog }, "*");
         },
-      })
-    );
+        error: function (...args: Arg[]) {
+          const [dataLog] = args;
+
+          if (typeof dataLog !== "object") {
+            return;
+          }
+
+          iframe.contentWindow?.parent.postMessage(
+            { type: "error", ...dataLog },
+            "*"
+          );
+        },
+      },
+    }));
 
     return () => {
       sandbox.current?.destroy();

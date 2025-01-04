@@ -1,106 +1,91 @@
-import { useRef } from "react";
-import Editor from "@monaco-editor/react";
-import { useApp } from "./hooks/use-app";
+import { EventData, useApp } from "./hooks/use-app";
+import { Editor } from "./components/editor";
+import { editor } from "monaco-editor";
+
+interface LogLine {
+  text: string;
+}
+
+const parseLogs = (data: EventData[]): LogLine[] => {
+  const maxLineIndex = Math.max(...data.map(({ line }) => line));
+
+  return Array.from({ length: maxLineIndex }, (_, i) => {
+    i += 1;
+
+    const lineData = data.filter((d) => d.line === i);
+
+    return {
+      text: lineData
+        .map(({ args }) =>
+          (args ?? [])
+            .map((arg) =>
+              typeof arg === "object"
+                ? JSON.stringify(arg, null, 1)
+                : String(arg)
+            )
+            .join(" ")
+        )
+        .join(" "),
+    };
+  });
+};
 
 function App() {
-  const monacoRef = useRef(null);
   const { code, error, logs, runCode, setCode } = useApp();
 
   const handleClickRun = (): void => {
     runCode();
   };
 
-  function handleEditorValidation(markers: any[]) {
+  function handleEditorValidation(markers: editor.IMarker[]) {
     if (markers.length < 1) {
       handleClickRun();
     }
   }
 
-  function handleEditorWillMount(monaco) {
-    monacoRef.current = monaco;
-
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      module: monaco.languages.typescript.ModuleKind.ESNext, // Usar ESNext para habilitar top-level await
-      target: monaco.languages.typescript.ScriptTarget.ES2022, // Compatibilidad con top-level await
-      allowJs: true, // Permitir JavaScript (opcional)
-      noLib: true, // No incluir librerías por defecto (opcional)
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs, // Resolución de módulos estilo Node.js
-      esModuleInterop: true, // Compatibilidad con ES Modules
-      allowNonTsExtensions: true,
-    });
-
-    monaco.editor.defineTheme("default", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [],
-      colors: {},
-    });
-    monaco.editor.setTheme('default')
-
-    setMonacoLibs();
-  }
-
-  function setMonacoLibs() {
-    if (!monacoRef.current) {
-      return;
-    }
-
-    const libsType = Object.keys({})
-      .map(
-        (importItem) =>
-          `declare module '${importItem}' {export default { } as any;}`
-      )
-      .join("\n");
-
-    monacoRef.current.languages.typescript.typescriptDefaults.addExtraLib(
-      libsType
-    );
-  }
-
   return (
-    <div
-      style={{
-        height: "100%",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-        flexWrap: "nowrap",
-      }}
-    >
-      <div style={{}}>
-        <button type="button" onClick={handleClickRun}>
-          Run
-        </button>
-      </div>
+    <div className="flex p-5 h-screen">
       <div
-        style={{
-          display: "flex",
-          height: "100%",
-          gap: "16px",
-        }}
+        className="flex flex-col flex-1 bg-slate-100 rounded-xl overflow-hidden"
+        style={{ backgroundColor: "#282a36" }}
       >
-        <div style={{ flex: 1 / 2 }}>
-          <Editor
-            height="100%"
-            defaultLanguage="typescript"
-            defaultValue={code}
-            theme="vs-dark"
-            onChange={(value = "") => setCode(value)}
-            beforeMount={handleEditorWillMount}
-            onValidate={handleEditorValidation}
-            options={{ fontSize: 14, minimap: { enabled: false } }}
-          />
+        <div className="flex justify-end p-5">
+          <button
+            className="h-10 px-6 font-semibold rounded-md bg-black text-white"
+            type="button"
+            onClick={handleClickRun}
+          >
+            Run
+          </button>
         </div>
-        <div style={{ flex: 1 / 2, display: "flex", flexDirection: "column" }}>
-          <div style={{ border: "1px solid #ccc", flexGrow: 1 }}>
-            {logs.map((log, i) => (
-              <p key={i} style={{ margin: 0 }}>
-                {log}
-              </p>
-            ))}
+        <div className="flex flex-grow overflow-scroll">
+          <div className="w-2/3">
+            <Editor
+              code={code}
+              setCode={setCode}
+              onValidate={handleEditorValidation}
+            />
           </div>
-          {error && <div>{error}</div>}
+          <div className="flex flex-col w-1/3 he-full overflow-scroll">
+            <div
+              className="text-white flex-1"
+              style={{ borderTop: "1px solid rgba(255,255,255, 0.1)" }}
+            >
+              {parseLogs(logs).map((log, i) => (
+                <p
+                  key={i}
+                  className="text-sm"
+                  style={{
+                    height: "21px",
+                    borderBottom: "1px solid rgba(255,255,255, 0.1)",
+                  }}
+                >
+                  {log.text}
+                </p>
+              ))}
+            </div>
+            {error && <div>{error}</div>}
+          </div>
         </div>
       </div>
     </div>
