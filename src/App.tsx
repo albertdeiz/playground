@@ -1,6 +1,7 @@
 import { EventData, useApp } from "./hooks/use-app";
 import { Editor } from "./components/editor";
 import { editor } from "monaco-editor";
+import { useState } from "react";
 
 interface LogLine {
   text: string;
@@ -32,6 +33,7 @@ const parseLogs = (data: EventData[]): LogLine[] => {
 
 function App() {
   const { code, error, logs, runCode, setCode } = useApp();
+  const [scrollTop, setScrollTop] = useState(0);
 
   const handleClickRun = (): void => {
     runCode();
@@ -58,15 +60,16 @@ function App() {
             Run
           </button>
         </div>
-        <div className="flex flex-grow overflow-scroll">
+        <div className="flex flex-grow overflow-hidden">
           <div className="w-2/3">
             <Editor
               code={code}
               setCode={setCode}
               onValidate={handleEditorValidation}
+              onScrollChange={setScrollTop}
             />
           </div>
-          <div className="flex flex-col w-1/3 he-full overflow-scroll">
+          <div className="flex flex-col w-1/3 he-full" style={{ transform: `translateY(-${scrollTop}px)` }}>
             <div
               className="text-white flex-1"
               style={{ borderTop: "1px solid rgba(255,255,255, 0.1)" }}

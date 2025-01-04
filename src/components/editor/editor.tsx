@@ -7,9 +7,10 @@ interface EditorProps {
   code: string;
   setCode: (code: string) => void;
   onValidate: (markers: editor.IMarker[]) => void;
+  onScrollChange?: (scrollTop: number) => void;
 }
 
-export const Editor = ({ code, setCode, onValidate }: EditorProps) => {
+export const Editor = ({ code, setCode, onValidate, onScrollChange }: EditorProps) => {
   const monacoRef = useRef<MonacoEditor>();
 
   function handleEditorWillMount(monaco: MonacoEditor) {
@@ -29,6 +30,14 @@ export const Editor = ({ code, setCode, onValidate }: EditorProps) => {
       monaco.editor.defineTheme("default", data as editor.IStandaloneThemeData);
       monaco.editor.setTheme("default");
     });
+  }
+
+  function handleEditorMount(editor: editor.IStandaloneCodeEditor) {
+    editor.revealLine(1);
+
+    editor.onDidScrollChange((e) => {
+      onScrollChange?.(e.scrollTop);
+    })
   }
 
   function setMonacoLibs() {
@@ -56,6 +65,7 @@ export const Editor = ({ code, setCode, onValidate }: EditorProps) => {
       theme="vs-dark"
       onChange={(value = "") => setCode(value)}
       beforeMount={handleEditorWillMount}
+      onMount={handleEditorMount}
       onValidate={onValidate}
       options={{ fontSize: 14, minimap: { enabled: false } }}
     />
