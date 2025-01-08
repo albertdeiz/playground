@@ -6,7 +6,7 @@ import { useRef } from "react";
 interface EditorProps {
   code: string;
   setCode: (code: string) => void;
-  onValidate: (markers: editor.IMarker[]) => void;
+  onValidate?: (markers: editor.IMarker[]) => void;
   onScrollChange?: (scrollTop: number) => void;
   onChangeLinesCount?: (linesCount: number) => void;
 }
