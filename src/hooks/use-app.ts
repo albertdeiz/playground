@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { SandboxManager } from "../classes/SandboxManager";
 import useLocalStorage from "./use-local-storage";
+import { useDebounce } from "./use-debounce";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Arg = any;
@@ -16,6 +17,7 @@ export interface EventData {
 export const useApp = () => {
   const [logs, setLogs] = useState<EventData[]>([]);
   const [code, setCode] = useLocalStorage("__CODE", "");
+  const debouncedCode = useDebounce(code, 1000);
   const [error, setError] = useState("");
   const sandbox = useRef<SandboxManager>();
 
@@ -90,6 +92,11 @@ export const useApp = () => {
       sandbox.current?.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    runCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedCode]);
 
   return {
     code,
