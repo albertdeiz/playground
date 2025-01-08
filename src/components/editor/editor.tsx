@@ -8,10 +8,18 @@ interface EditorProps {
   setCode: (code: string) => void;
   onValidate: (markers: editor.IMarker[]) => void;
   onScrollChange?: (scrollTop: number) => void;
+  onChangeLinesCount?: (linesCount: number) => void;
 }
 
-export const Editor = ({ code, setCode, onValidate, onScrollChange }: EditorProps) => {
+export const Editor = ({
+  code,
+  setCode,
+  onValidate,
+  onScrollChange,
+  onChangeLinesCount,
+}: EditorProps) => {
   const monacoRef = useRef<MonacoEditor>();
+  const editorRef = useRef<editor.IStandaloneCodeEditor>();
 
   function handleEditorWillMount(monaco: MonacoEditor) {
     monacoRef.current = monaco;
@@ -35,7 +43,15 @@ export const Editor = ({ code, setCode, onValidate, onScrollChange }: EditorProp
 
     editor.onDidScrollChange((e) => {
       onScrollChange?.(e.scrollTop);
-    })
+    });
+
+    editorRef.current = editor;
+  }
+
+  function handleOnChange(value = ""): void {
+    setCode(value);
+
+    onChangeLinesCount?.(editorRef.current?.getModel()?.getLineCount() ?? 0);
   }
 
   function setMonacoLibs() {
@@ -61,7 +77,7 @@ export const Editor = ({ code, setCode, onValidate, onScrollChange }: EditorProp
       defaultLanguage="typescript"
       defaultValue={code}
       theme="vs-dark"
-      onChange={(value = "") => setCode(value)}
+      onChange={handleOnChange}
       beforeMount={handleEditorWillMount}
       onMount={handleEditorMount}
       onValidate={onValidate}

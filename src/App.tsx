@@ -7,10 +7,8 @@ interface LogLine {
   text: string;
 }
 
-const parseLogs = (data: EventData[]): LogLine[] => {
-  const maxLineIndex = Math.max(...data.map(({ line }) => line));
-
-  return Array.from({ length: maxLineIndex }, (_, i) => {
+const parseLogs = (data: EventData[], linesCount: number): LogLine[] => {
+  return Array.from({ length: linesCount }, (_, i) => {
     i += 1;
 
     const lineData = data.filter((d) => d.line === i);
@@ -33,6 +31,7 @@ const parseLogs = (data: EventData[]): LogLine[] => {
 
 function App() {
   const { code, error, logs, runCode, setCode } = useApp();
+  const [lineCount, setLinesCount] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
 
   const handleClickRun = (): void => {
@@ -67,6 +66,7 @@ function App() {
               setCode={setCode}
               onValidate={handleEditorValidation}
               onScrollChange={setScrollTop}
+              onChangeLinesCount={setLinesCount}
             />
           </div>
           <div className="relative flex flex-col w-1/3 he-full">
@@ -84,7 +84,7 @@ function App() {
                 transform: `translateY(-${scrollTop}px)`,
               }}
             >
-              {parseLogs(logs).map((log, i) => (
+              {parseLogs(logs, lineCount).map((log, i) => (
                 <p
                   key={i}
                   className="text-sm"
