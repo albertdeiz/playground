@@ -1,4 +1,5 @@
 import { preprocessCode } from "../utils/transpiler.util";
+import * as Babel from "@babel/standalone";
 
 interface Scope {
   console?: {
@@ -35,7 +36,7 @@ export class SandboxManager {
     }
   }
 
-  private static transformCode(code: string): {
+  private static transformCode(rawCode: string): {
     imports: string[];
     code: string;
   } {
@@ -43,13 +44,18 @@ export class SandboxManager {
     const imports: string[] = [];
 
     let match = null;
-    while ((match = importRegex.exec(code)) !== null) {
+    while ((match = importRegex.exec(rawCode)) !== null) {
       const [, bindings, moduleName] = match;
       const moduleUrl = moduleName;
       imports.push(`import ${bindings} from '${moduleUrl}';`);
     }
 
-    const transpiledCode = preprocessCode(code);
+    const code = preprocessCode(rawCode ?? "");
+    
+    const transpiledCode = Babel.transform(code, {
+      presets: ["typescript"],
+      filename: "example.ts",
+    }).code ?? '';
 
     return { code: transpiledCode.replace(importRegex, "").trim(), imports };
   }

@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@babel/parser':
+        specifier: ^7.26.3
+        version: 7.26.3
+      '@babel/standalone':
+        specifier: ^7.26.4
+        version: 7.26.4
       '@monaco-editor/react':
         specifier: ^4.6.0
         version: 4.6.0(monaco-editor@0.52.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -27,6 +33,9 @@ importers:
       '@eslint/js':
         specifier: ^9.17.0
         version: 9.17.0
+      '@types/babel__standalone':
+        specifier: ^7.1.9
+        version: 7.1.9
       '@types/react':
         specifier: ^18.3.17
         version: 18.3.18
@@ -716,6 +725,10 @@ packages:
     resolution: {integrity: sha512-FDSOghenHTiToteC/QRlv2q3DhPZ/oOXTBoirfWNx1Cx3TMVcGWQtMMmQcSvb/JjpNeGzx8Pq/b4fKEJuWm1sw==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/standalone@7.26.4':
+    resolution: {integrity: sha512-SF+g7S2mhTT1b7CHyfNjDkPU1corxg4LPYsyP0x5KuCl+EbtBQHRLqr9N3q7e7+x7NQ5LYxQf8mJ2PmzebLr0A==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/template@7.25.9':
     resolution: {integrity: sha512-9DGttpmPvIxBb/2uwpVo3dqJ+O6RooAFOS+lB+xDqoE2PVCE8nfoHMdZLpfCQRLwvohzXISPZcgxt80xLfsuwg==}
     engines: {node: '>=6.9.0'}
@@ -1158,6 +1171,21 @@ packages:
 
   '@swc/types@0.1.17':
     resolution: {integrity: sha512-V5gRru+aD8YVyCOMAjMpWR1Ui577DD5KSJsHP8RAxopAH22jFz6GZd/qxqjO6MJHQhcsjvjOFXyDhyLQUnMveQ==}
+
+  '@types/babel__core@7.20.5':
+    resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
+
+  '@types/babel__generator@7.6.8':
+    resolution: {integrity: sha512-ASsj+tpEDsEiFr1arWrlN6V3mdfjRMZt6LtK/Vp/kreFLnr5QH5+DhvD5nINYZXzwJvXeGq+05iUXcAzVrqWtw==}
+
+  '@types/babel__standalone@7.1.9':
+    resolution: {integrity: sha512-IcCNPLqpevUD7UpV8QB0uwQPOyoOKACFf0YtYWRHcmxcakaje4Q7dbG2+jMqxw/I8Zk0NHvEps66WwS7z/UaaA==}
+
+  '@types/babel__template@7.4.4':
+    resolution: {integrity: sha512-h/NUaSyG5EyxBIp8YRxo4RMe2/qQgvyowRwVMzhYhBCONbW8PUsg4lkFMrhgZhUe5z3L3MiLDuvyJ/CaPa2A8A==}
+
+  '@types/babel__traverse@7.20.6':
+    resolution: {integrity: sha512-r1bzfrm0tomOI8g1SzvCaQHo6Lcv6zu0EA+W2kHrt8dyrHQxGzBBL4kdkzIS+jBMV+EYcMAEAqXqYaLJq5rOZg==}
 
   '@types/eslint@8.56.12':
     resolution: {integrity: sha512-03ruubjWyOHlmljCVoxSuNDdmfZDzsrrz0P2LeJsOXr+ZwFQ+0yQIwNCwt/GYhV7Z31fgtXJTAEs+FYlEL851g==}
@@ -3621,6 +3649,8 @@ snapshots:
     dependencies:
       regenerator-runtime: 0.14.1
 
+  '@babel/standalone@7.26.4': {}
+
   '@babel/template@7.25.9':
     dependencies:
       '@babel/code-frame': 7.26.2
@@ -3944,6 +3974,36 @@ snapshots:
   '@swc/types@0.1.17':
     dependencies:
       '@swc/counter': 0.1.3
+
+  '@types/babel__core@7.20.5':
+    dependencies:
+      '@babel/parser': 7.26.3
+      '@babel/types': 7.26.3
+      '@types/babel__generator': 7.6.8
+      '@types/babel__template': 7.4.4
+      '@types/babel__traverse': 7.20.6
+
+  '@types/babel__generator@7.6.8':
+    dependencies:
+      '@babel/types': 7.26.3
+
+  '@types/babel__standalone@7.1.9':
+    dependencies:
+      '@babel/parser': 7.26.3
+      '@babel/types': 7.26.3
+      '@types/babel__core': 7.20.5
+      '@types/babel__generator': 7.6.8
+      '@types/babel__template': 7.4.4
+      '@types/babel__traverse': 7.20.6
+
+  '@types/babel__template@7.4.4':
+    dependencies:
+      '@babel/parser': 7.26.3
+      '@babel/types': 7.26.3
+
+  '@types/babel__traverse@7.20.6':
+    dependencies:
+      '@babel/types': 7.26.3
 
   '@types/eslint@8.56.12':
     dependencies:

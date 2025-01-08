@@ -1,14 +1,15 @@
 import * as recast from "recast";
-import { parser } from "recast/parsers/babel";
+import * as BabelParser from '@babel/parser';
 
 const { builders: b } = recast.types;
 
 export function preprocessCode(code: string): string {
-  const recastAST = recast.parse(code, {
-    parser,
+  const babelAST = BabelParser.parse(code, {
+    sourceType: 'module',
+    plugins: ['typescript'],
   });
 
-  recast.types.visit(recastAST, {
+  recast.types.visit(babelAST, {
     visitNewExpression() {
       return false;
     },
@@ -85,5 +86,5 @@ export function preprocessCode(code: string): string {
     },
   });
 
-  return recast.print(recastAST).code;
+  return recast.print(babelAST).code;
 }

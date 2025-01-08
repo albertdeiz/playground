@@ -19,8 +19,6 @@ export const Editor = ({ code, setCode, onValidate, onScrollChange }: EditorProp
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
       module: monaco.languages.typescript.ModuleKind.ESNext, // Usar ESNext para habilitar top-level await
       target: monaco.languages.typescript.ScriptTarget.Latest, // Compatibilidad con top-level await
-      allowJs: true, // Permitir JavaScript (opcional)
-      noLib: true, // No incluir librerías por defecto (opcional)
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs, // Resolución de módulos estilo Node.js
       esModuleInterop: true, // Compatibilidad con ES Modules
       allowNonTsExtensions: true,
