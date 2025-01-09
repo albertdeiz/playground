@@ -1,6 +1,5 @@
 import { EventData, useApp } from "./hooks/use-app";
 import { Editor } from "./components/editor";
-import { editor } from "monaco-editor";
 import { useState } from "react";
 
 interface LogLine {
@@ -45,7 +44,7 @@ function App() {
           style={{ backgroundColor: "#363848" }}
         >
           <div
-            className="flex items-center h-10 px-6 gap-1"
+            className="flex items-center h-10 pl-3 pr-6 gap-1"
             style={{ backgroundColor: "#44475a" }}
           >
             <svg
@@ -60,7 +59,7 @@ function App() {
                 fill="#007acc"
               />
             </svg>
-            <p className="text-sm text-white">example.ts</p>
+            <p className="text-sm text-white ml-1">example.ts</p>
           </div>
         </div>
         <div className="flex flex-grow overflow-hidden">

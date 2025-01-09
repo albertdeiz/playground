@@ -64,7 +64,38 @@ export const useApp = () => {
             return;
           }
 
-          iframe.contentWindow?.parent.postMessage({ ...dataLog }, "*");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const sanitizeArg = (item: any, seen?: Set<any>): string | number => {
+            seen ||= new Set();
+
+            if (item === null) return "null";
+            if (item === undefined) return "undefined";
+            if (item.constructor.name === "Number") return item;
+            if (item.constructor.name === "String") return `"${item}"`;
+            if (item.constructor.name === "Array") {
+              // Verificamos si el array contiene elementos circulares
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              return `[${item.map((i: any) => sanitizeArg(i, seen)).join(", ")}]`;
+            }
+            if (item.constructor.name === "Object") {
+              // Detectar estructuras circulares
+              if (seen.has(item)) return "[Circular]";
+              seen.add(item); // Añadimos al conjunto de objetos visitados
+              return `{ ${Object.entries(item)
+                .map(([key, value]) => `${key}: ${sanitizeArg(value, seen)}`)
+                .join(", ")} }`;
+            }
+            if (item.constructor.name === "Function") {
+              // return `[Function: ${item.name || "anonymous"}]`;
+              return `${item.constructor.name ?? 'anonymous'}() { [native code] }`;
+            }
+            return item.toString();
+          };
+
+          iframe.contentWindow?.parent.postMessage(
+            { ...dataLog, args: dataLog.args.map(sanitizeArg) },
+            "*"
+          );
         },
         error: function (...args: Arg[]) {
           const [dataLog] = args;
