@@ -3,8 +3,8 @@ import * as Babel from "@babel/standalone";
 
 interface Scope {
   console?: {
-    log: () => void;
-    error: () => void;
+    log: (...args: any[]) => void;
+    error: (...args: any[]) => void;
   };
 }
 
@@ -20,16 +20,16 @@ export class SandboxManager {
   private script: HTMLScriptElement | undefined;
 
   constructor(scope: Scope) {
-    this.createIframe(scope);
+    this.createIframe();
+    this.scope = scope;
   }
 
-  private createIframe(scope: Scope): void {
+  private createIframe(): void {
     this.iframe = document.createElement("iframe");
     this.iframe.src = "about:blank";
     this.iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
     this.iframe.style.display = "none";
     document.body.appendChild(this.iframe);
-    this.scope = scope;
 
     if (this.iframe.contentWindow) {
       this.initializeSandbox();
@@ -79,10 +79,15 @@ export class SandboxManager {
   }
 
   public executeScript(script: string): void {
-    if (!this.iframe?.contentWindow) throw new Error("Iframe no disponible.");
+    this.destroy();
+    this.createIframe();
 
     if (this.script) {
       this.script.remove();
+    }
+
+    if (!this.iframe?.contentWindow) {
+      throw new Error("No hay iframe definido");
     }
 
     if (this.scope?.console) {
@@ -108,10 +113,11 @@ export class SandboxManager {
 
       this.iframe.contentWindow.document.body.appendChild(this.script);
     } catch (e) {
-      this.iframe.contentWindow?.parent.postMessage(
-        { type: "error", stack: e.stack, message: e.message },
-        "*"
-      );
+      this.scope?.console?.error({
+        type: "error",
+        stack: e.stack,
+        message: e.message,
+      });
     }
   }
 
