@@ -19,17 +19,17 @@ export class SandboxManager {
   private scope: Scope | undefined;
   private script: HTMLScriptElement | undefined;
 
-  constructor(cb: (iframe: HTMLIFrameElement) => Scope) {
-    this.createIframe(cb);
+  constructor(scope: Scope) {
+    this.createIframe(scope);
   }
 
-  private createIframe(cb: (iframe: HTMLIFrameElement) => Scope): void {
+  private createIframe(scope: Scope): void {
     this.iframe = document.createElement("iframe");
     this.iframe.src = "about:blank";
     this.iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
     this.iframe.style.display = "none";
     document.body.appendChild(this.iframe);
-    this.scope = cb(this.iframe);
+    this.scope = scope;
 
     if (this.iframe.contentWindow) {
       this.initializeSandbox();
@@ -51,11 +51,12 @@ export class SandboxManager {
     }
 
     const code = preprocessCode(rawCode ?? "");
-    
-    const transpiledCode = Babel.transform(code, {
-      presets: ["typescript"],
-      filename: "example.ts",
-    }).code ?? '';
+
+    const transpiledCode =
+      Babel.transform(code, {
+        presets: ["typescript"],
+        filename: "example.ts",
+      }).code ?? "";
 
     return { code: transpiledCode.replace(importRegex, "").trim(), imports };
   }

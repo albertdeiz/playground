@@ -1,31 +1,20 @@
-import { EventData, useApp } from "./hooks/use-app";
+import { LogArgument, LogData, useApp } from "./hooks/use-app";
 import { Editor } from "./components/editor";
 import { useState } from "react";
+import StyledValue from "./components/styled-value";
 
-interface LogLine {
-  text: string;
-}
+type LogLine = LogArgument[][];
 
-const parseLogs = (data: EventData[], linesCount: number): LogLine[] => {
-  return Array.from({ length: linesCount }, (_, i) => {
+const parseLogs = (data: LogData[], linesCount: number): LogLine[] => {
+  const logs = Array.from({ length: linesCount }, (_, i) => {
     i += 1;
 
-    const lineData = data.filter((d) => d.line === i);
+    const logLine = data.filter((d) => d.line === i);
 
-    return {
-      text: lineData
-        .map(({ args }) =>
-          (args ?? [])
-            .map((arg) =>
-              typeof arg === "object"
-                ? JSON.stringify(arg, null, 1)
-                : String(arg)
-            )
-            .join(" ")
-        )
-        .join(" "),
-    };
+    return logLine.map((log) => log.args ?? []);
   });
+
+  return logs;
 };
 
 function App() {
@@ -85,7 +74,7 @@ function App() {
                 transform: `translateY(-${scrollTop}px)`,
               }}
             >
-              {parseLogs(logs, lineCount).map((log, i) => (
+              {parseLogs(logs, lineCount).map((lineLog, i) => (
                 <p
                   key={i}
                   className="text-sm"
@@ -94,7 +83,11 @@ function App() {
                     borderBottom: "1px solid rgba(255,255,255, 0.1)",
                   }}
                 >
-                  {log.text}
+                  {lineLog.map((log, i) =>
+                    log.map((logArgument) => (
+                      <StyledValue key={i} logArgument={logArgument} />
+                    ))
+                  )}
                 </p>
               ))}
             </div>
