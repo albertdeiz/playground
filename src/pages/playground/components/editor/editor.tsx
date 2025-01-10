@@ -54,22 +54,22 @@ export const Editor = ({
     onChangeLinesCount?.(editorRef.current?.getModel()?.getLineCount() ?? 0);
   }
 
-  function setMonacoLibs() {
-    if (!monacoRef.current) {
-      return;
-    }
+  // function setMonacoLibs() {
+  //   if (!monacoRef.current) {
+  //     return;
+  //   }
 
-    const libsType = Object.keys({})
-      .map(
-        (importItem) =>
-          `declare module '${importItem}' {export default { } as any;}`
-      )
-      .join("\n");
+  //   const libsType = Object.keys({})
+  //     .map(
+  //       (importItem) =>
+  //         `declare module '${importItem}' {export default { } as any;}`
+  //     )
+  //     .join("\n");
 
-    monacoRef.current.languages.typescript.typescriptDefaults.addExtraLib(
-      libsType
-    );
-  }
+  //   monacoRef.current.languages.typescript.typescriptDefaults.addExtraLib(
+  //     libsType
+  //   );
+  // }
 
   return (
     <BaseEditor

@@ -1,5 +1,6 @@
 import React from "react";
-import { LogArgument } from "../hooks/use-app";
+import { LogArgument } from "../utils/log-parser.util";
+
 
 type StyledValueProps = {
   logArgument: LogArgument;

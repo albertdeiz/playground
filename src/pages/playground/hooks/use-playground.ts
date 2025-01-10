@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
-import { SandboxManager } from "../classes/SandboxManager";
 import useLocalStorage from "./use-local-storage";
 import { useDebounce } from "./use-debounce";
+import { SandboxManager } from "../classes/SandboxManager";
 import { Arg, LogArgument, sanitizeArg } from "../utils/log-parser.util";
 
 export interface LogData {
@@ -25,7 +25,7 @@ interface ErrorEventData extends ErrorData {
 
 export type EventData = LogEventData | ErrorEventData;
 
-export const useApp = () => {
+export const usePlayground = () => {
   const [logs, setLogs] = useState<LogData[]>([]);
   const [code, setCode] = useLocalStorage("__CODE", "");
   const debouncedCode = useDebounce(code, 1000);

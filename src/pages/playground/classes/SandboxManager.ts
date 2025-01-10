@@ -113,11 +113,15 @@ export class SandboxManager {
 
       this.iframe.contentWindow.document.body.appendChild(this.script);
     } catch (e) {
-      this.scope?.console?.error({
-        type: "error",
-        stack: e.stack,
-        message: e.message,
-      });
+      console.error(e);
+
+      if (e instanceof Error) {
+        this.scope?.console?.error({
+          type: "error",
+          stack: e.stack,
+          message: e.message,
+        });
+      }
     }
   }
 
