@@ -45,6 +45,8 @@ export const Editor = ({
       onScrollChange?.(e.scrollTop);
     });
 
+    onChangeLinesCount?.(editor.getModel()?.getLineCount() ?? 0);
+
     editorRef.current = editor;
   }
 
