@@ -43,7 +43,7 @@ export const sanitizeArg = (item: Arg, seen: Set<Arg> = new Set()): LogArgument 
   }
 
   if (item.constructor.name === 'String') {
-    return { dataType: "string", value: `"${item}"` };
+    return { dataType: "string", value: `'${item}'` };
   }
 
   if (item.constructor.name === 'Date') {

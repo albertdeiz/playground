@@ -38,7 +38,9 @@ export const LogsContainer = () => {
         >
           {lineLog.map((log, i) =>
             log.map((logArgument) => (
-              <StyledValue key={i} logArgument={logArgument} />
+              <code key={i} className="whitespace-pre">
+                <StyledValue logArgument={logArgument} />
+              </code>
             ))
           )}
         </p>

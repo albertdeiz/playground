@@ -25,9 +25,12 @@ interface ErrorEventData extends ErrorData {
 
 export type EventData = LogEventData | ErrorEventData;
 
+const defaultCode =
+  'const height = 15;\nconst mid = Math.floor(height / 2);\nconst diamond = Array(height)\n  .fill(0)\n  .map((_, row) => {\n    const spaces = Math.abs(mid - row);\n    const stars = height - 2 * spaces;\n    return " ".repeat(spaces) + "*".repeat(stars);\n  })\n  .join("\\n");\n\ndiamond;';
+
 export const usePlayground = () => {
   const [logs, setLogs] = useState<LogData[]>([]);
-  const [code, setCode] = useLocalStorage("__CODE", "");
+  const [code, setCode] = useLocalStorage("__CODE", defaultCode);
   const debouncedCode = useDebounce(code, 1000);
   const [error, setError] = useState("");
   const sandbox = useRef<SandboxManager>();
@@ -35,7 +38,7 @@ export const usePlayground = () => {
   const runCode = () => {
     setLogs([]);
     setError("");
-    
+
     sandbox.current?.executeScript(code);
   };
 
